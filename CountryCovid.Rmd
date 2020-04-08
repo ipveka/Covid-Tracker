@@ -1,0 +1,468 @@
+---
+title: "ECDC COVID-19"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    social: menu
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+
+#------------------ Packages ------------------
+
+library(ggplot2)
+library(hrbrthemes)
+library(shinydashboard)
+library(shiny)
+library(lubridate)
+library(scales)
+library(plotly)
+library(knitr)
+library(dplyr)
+library(DT)
+
+#------------------ Data ------------------
+
+source("01.Get_data.R")
+
+#------------------ Parameters ------------------
+
+confirmed_color <- "#000080"
+main_color <- "#000000"
+death_color <- "#000080"
+
+#------------------ Data ------------------
+
+colnames(data) <- c("Date","Day","Month","Year","Cases","Deaths","Country","GeoId","TerritoryCode","PopData2018")
+
+# Only select countries with more than 100 cases
+
+Aux <- data %>% group_by(Country) %>% mutate(CumSum = cumsum(Cases))
+Aux <- Aux %>% filter(CumSum>100)
+Countries <- unique(Aux$Country)
+DfCountries <- data.frame(Countries=Countries,Id=c(1:length(Countries)))
+ListCountries <- as.list(DfCountries$Id)
+names(ListCountries) <- DfCountries$Countries
+
+#------------------ Last update ------------------
+
+data$Date <- as.Date(data$Date, format="%d/%m/%Y")
+LastUpdate <- max(data$Date)
+
+whichspain <- as.numeric(ListCountries['Spain'])
+
+```
+
+<!-- <style>                      -->
+<!-- .navbar { -->
+<!--   border-color:black; -->
+<!--   color:black!important; -->
+<!-- } -->
+<!-- </style> -->
+
+Summary
+=======================================================================
+
+Input {.sidebar}
+-----------------------------------------------------------------------
+
+```{r}
+
+# SelectInput
+
+selectInput("CountryId", label = h3("Select country"), 
+  choices = ListCountries,
+  selected = whichspain)
+
+```
+
+```{r}
+
+# Get data
+
+df1 <- eventReactive(input$CountryId,{
+  
+# Selected country
+  
+SelectedCountry <- as.character(DfCountries$Countries[as.integer(input$CountryId)])
+
+# Filter and mutate
+
+df0 <- data %>%
+  arrange(Date) %>% 
+  filter(Country == SelectedCountry) %>%
+  mutate(CumCases = cumsum(Cases),
+         CumDeaths = cumsum(Deaths),
+         LogCases = log(Cases),
+         LogDeaths = log(Deaths),
+         CumLogCases = log(CumCases),
+         CumLogDeaths = log(CumCases)) %>%
+  filter(CumCases > 100)
+
+# Day Index
+
+df0 <- df0 %>% mutate(DayIndex = c(1:nrow(df0)))
+
+# Move log(0) to 0
+
+df0 <- df0 %>% mutate(LogCases = ifelse(LogCases<0,0,LogCases),
+                      LogDeaths = ifelse(LogDeaths<0,0,LogDeaths),
+                      CumLogCases = ifelse(CumLogCases<0,0,CumLogCases),
+                      CumLogDeaths = ifelse(CumLogDeaths<0,0,CumLogDeaths))
+
+# Output
+
+df0
+
+})
+
+```
+
+`r hr()`
+
+`r paste0("Last update:", " ",LastUpdate)`
+
+`r hr()`
+
+The 2019–20 coronavirus pandemic is an ongoing pandemic of coronavirus disease 2019 (COVID-19), caused by severe acute respiratory syndrome coronavirus 2 (SARS-CoV-2). 
+
+`r hr()`
+
+The outbreak was first identified in Wuhan, Hubei, China, in December 2019. The World Health Organization (WHO) declared the outbreak to be a Public Health Emergency of International Concern on 30 January 2020 and recognized it as a pandemic on 11 March.
+
+`r hr()`
+
+The source of the data is the ECDC (European Centre for Disease Prevention and Control), an European Agency. They update the database once a day.
+
+`r hr()`
+
+Data shown here is from countries with more than 100 confirmed cases. Plots also start after the 100th confirmed case.
+
+`r hr()`
+
+More information in **about**
+
+`r hr()`
+
+`r helpText("Developed by ",a("Ignasi Pascual", href = "https://github.com/ipveka"),style = "padding-left:1em; padding-right:1em;position:absolute;")`
+
+Row
+-----------------------------------------------------------------------
+
+### Confirmed {.value-box}
+
+```{r}
+
+flexdashboard::renderValueBox({
+
+flexdashboard::valueBox(value = paste(format(max(df1()$CumCases), big.mark = "."), "", sep = " "), 
+         caption = "Total Confirmed Cases", 
+         color = confirmed_color)
+  
+})
+
+```
+
+### Deaths {.value-box}
+
+```{r}
+
+
+flexdashboard::renderValueBox({
+
+flexdashboard::valueBox(value = paste(format(sum(df1()$Deaths), big.mark = "."), "", sep = " "), 
+         caption = "Death Cases",
+         color = death_color)
+})
+
+```
+
+Row
+-----------------------------------------------------------------------
+
+### Cases per day 
+
+```{r}
+
+# Call
+
+renderPlotly({
+
+# Ggplot2
+
+p1 <- ggplot(data = df1(), aes(x = Date, y = Cases)) + theme_light() + 
+      geom_line(color = main_color) + labs(x = "Time", y = "Cases", title = "Reported cases per day") +
+      theme(panel.grid.major.y = element_blank(),panel.grid.minor.y = element_blank()) +
+      scale_x_date(expand = c(0,0), date_breaks = "1 week", date_labels = "%b %d")
+
+ggplotly(p1)
+
+})
+
+```
+
+### Deaths per day
+    
+```{r}
+
+# Call
+
+renderPlotly({
+
+# Ggplot2
+
+p2 <- ggplot(data = df1(), aes(x = Date, y = Deaths)) + theme_light() + 
+      geom_line(color = main_color) + labs(x = "Time", y = "Deaths", title = "Reported deaths per day") +
+      theme(panel.grid.major.y = element_blank(),panel.grid.minor.y = element_blank()) +
+      scale_x_date(expand = c(0,0), date_breaks = "1 week", date_labels = "%b %d")
+
+ggplotly(p2)
+
+})
+
+```
+
+Row
+-----------------------------------------------------------------------
+
+### Cumulative cases per day 
+
+```{r}
+
+# Call
+
+renderPlotly({
+
+# Ggplot2
+
+p3 <- ggplot(data = df1(), aes(x = Date, y = CumCases)) + theme_light() + 
+      geom_line(color = main_color) + labs(x = "Time", y = "Cases", title = "Reported cumulative cases") +
+      theme(panel.grid.major.y = element_blank(),panel.grid.minor.y = element_blank()) +
+      scale_x_date(expand = c(0,0), date_breaks = "1 week", date_labels = "%b %d")
+
+ggplotly(p3)
+
+})
+
+```
+
+### Cumulative deaths per day
+    
+```{r}
+
+# Call
+
+renderPlotly({
+
+# Ggplot2
+
+p4 <- ggplot(data = df1(), aes(x = Date, y = CumDeaths)) + theme_light() + 
+      geom_line(color = main_color) + labs(x = "Time", y = "Deaths", title = "Reported cumulative deaths") +
+      theme(panel.grid.major.y = element_blank(),panel.grid.minor.y = element_blank()) +
+      scale_x_date(expand = c(0,0), date_breaks = "1 week", date_labels = "%b %d")
+
+ggplotly(p4)
+
+})
+
+```
+
+Logarithmic
+=======================================================================
+
+Row
+-----------------------------------------------------------------------
+
+### Confirmed {.value-box}
+
+```{r}
+
+flexdashboard::renderValueBox({
+
+flexdashboard::valueBox(value = paste(format(max(df1()$CumCases), big.mark = "."), "", sep = " "), 
+         caption = "Total Confirmed Cases", 
+         color = confirmed_color)
+  
+})
+
+```
+
+### Deaths {.value-box}
+
+```{r}
+
+
+flexdashboard::renderValueBox({
+
+flexdashboard::valueBox(value = paste(format(sum(df1()$Deaths), big.mark = "."), "", sep = " "), 
+         caption = "Death Cases",
+         color = death_color)
+})
+
+```
+
+Row
+-----------------------------------------------------------------------
+
+### Log-Cases per day 
+
+```{r}
+
+# Call
+
+renderPlotly({
+
+# Ggplot2
+
+p5 <- ggplot(data = df1(), aes(x = Date, y = LogCases)) + theme_light() + 
+      geom_line(color = main_color) + labs(x = "Time", y = "Cases", title = "Reported cases per day") +
+      theme(panel.grid.major.y = element_blank(),panel.grid.minor.y = element_blank()) +
+      scale_x_date(expand = c(0,0), date_breaks = "1 week", date_labels = "%b %d")
+
+ggplotly(p5)
+
+})
+
+```
+
+### Log-Deaths per day
+    
+```{r}
+
+# Call
+
+renderPlotly({
+
+# Ggplot2
+
+p6 <- ggplot(data = df1(), aes(x = Date, y = LogDeaths)) + theme_light() + 
+      geom_line(color = main_color) + labs(x = "Time", y = "Deaths", title = "Reported deaths per day") +
+      theme(panel.grid.major.y = element_blank(),panel.grid.minor.y = element_blank()) +
+      scale_x_date(expand = c(0,0), date_breaks = "1 week", date_labels = "%b %d")
+
+ggplotly(p6)
+
+})
+
+```
+
+Row
+-----------------------------------------------------------------------
+
+### Log-Cumulative cases per day 
+
+```{r}
+
+# Call
+
+renderPlotly({
+
+# Ggplot2
+
+p7 <- ggplot(data = df1(), aes(x = Date, y = CumLogCases)) + theme_light() + 
+      geom_line(color = main_color) + labs(x = "Time", y = "Cases", title = "Reported cumulative cases") +
+      theme(panel.grid.major.y = element_blank(),panel.grid.minor.y = element_blank()) +
+      scale_x_date(expand = c(0,0), date_breaks = "1 week", date_labels = "%b %d")
+
+ggplotly(p7)
+
+})
+
+```
+
+### Log-Cumulative deaths per day
+    
+```{r}
+
+# Call
+
+renderPlotly({
+
+# Ggplot2
+
+p8 <- ggplot(data = df1(), aes(x = Date, y = CumLogDeaths)) + theme_light() + 
+      geom_line(color = main_color) + labs(x = "Time", y = "Deaths", title = "Reported cumulative deaths") +
+      theme(panel.grid.major.y = element_blank(),panel.grid.minor.y = element_blank()) +
+      scale_x_date(expand = c(0,0), date_breaks = "1 week", date_labels = "%b %d")
+
+ggplotly(p8)
+
+})
+
+```
+
+Data
+=======================================================================
+
+```{r}
+
+renderDataTable({
+
+datatable(df1(),
+  options = list(
+  columnDefs = list(list(className = 'dt-center', targets = 5)),
+  pageLength = 20,
+  lengthMenu = c(5, 10, 15, 20),
+  scrollX='400px'
+))
+  
+})
+
+```
+
+About
+=======================================================================
+
+**Information**
+
+`r paste0("Last update:", " ",LastUpdate)`
+
+`r hr()`
+
+**General**
+
+The 2019–20 coronavirus pandemic is an ongoing pandemic of coronavirus disease 2019 (COVID-19), caused by severe acute respiratory syndrome coronavirus 2 (SARS-CoV-2). 
+
+The outbreak was first identified in Wuhan, Hubei, China, in December 2019. The World Health Organization (WHO) declared the outbreak to be a Public Health Emergency of International Concern on 30 January 2020 and recognized it as a pandemic on 11 March.
+
+The source of the data is the ECDC (European Centre for Disease Prevention and Control), an European Agency. They update the database once a day.
+
+`r hr()`
+
+**Data**
+
+Health authorities: **https://www.who.int/**
+
+Covid-19 Info: **https://en.wikipedia.org/wiki/2019%E2%80%9320_coronavirus_pandemic**
+
+Data source: **https://www.ecdc.europa.eu/en/publications-data/download-todays-data-geographic-distribution-covid-19-cases-worldwide**
+
+The agency: **https://www.ecdc.europa.eu/en/about-us/ecdcs-organisational-structure**
+
+`r hr()`
+
+**Notes**
+
+Plots in Summary start from the day there were 100 active cases. 
+
+`r hr()`
+
+**Packages**
+
+* Dashboard interface - the [flexdashboard](https://rmarkdown.rstudio.com/flexdashboard/) package
+* Visualization - the [ggplot2] (https://ggplot2.tidyverse.org/) package
+* Tables - the [DT](https://rstudio.github.io/DT/) package
+
+`r hr()`
+
+**Deployment and reproducibly**
+
+The dashboard was deployed to Github docs. If you wish to deploy and/or modify the dashboard on your Github account, you can apply the following steps:
+
+* Fork the dashboard [repository](https://github.com/ipveka/ECDC_Dashboard_Covid19), or
+* Clone it and push it to your Github package
+
+`r hr()`
+
+`r helpText("Developed by ",a("Ignasi Pascual", href = "https://github.com/ipveka"),style = "padding-left:1em; padding-right:1em;position:absolute;")`
