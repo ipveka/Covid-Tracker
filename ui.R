@@ -10,33 +10,41 @@ library("shiny") # Shiny components
 library("shinydashboard") # Shiny dashboard
 library("shinycssloaders") # Animated CSS loader
 library("shinyalert") # Shiny Alerts
+library("shinyWidgets") # Shiny Widgets
 library("shinytest") # For testing 
 library("shinyjs") # JavaScript
 library("quantmod") # Financial data
 library("highcharter") # Plotting
 library("markdown") # Reporting
-library("DT") # Data tables  
-
-library(ggplot2) # Plotting
-library(hrbrthemes) # Themes
-library(shinydashboard) # Shiny
-library(shiny) # Shiny
-library(lubridate) # Tidy
-library(scales) # Plotting
-library(plotly) # Plotting
-library(dplyr) # Tidy
-library(DT) # Tables
+library("ggplot2") # Plotting
+library("hrbrthemes") # Themes
+library("lubridate") # Tidy
+library("scales") # Plotting
+library("plotly") # Plotting
+library("dplyr") # Tidy
+library("DT") # Data tables 
 
 # Icons: https://fontawesome.com/icons?d=listing
 # Hchart: http://jkunst.com/highcharter/index.html
 
-### Title:
+### Title: ----------------------------------------------------------------
 
 header <- dashboardHeader(title = "ShinyCovid")
 
-### SideBar:
+### SideBar: ----------------------------------------------------------------
 
-sidebar <- dashboardSidebar(width = 200,
+# helpText(h6("Select a country")),
+# selectInput(inputId = "CountryId", label = h6("Countries"),
+#             choices = ListCountries,selected = whichspain),
+# helpText(h5(paste0("Last data:"," ",LastUpdate))),
+
+sidebar <- dashboardSidebar(width = 250,
+   
+                            selectInput(inputId = "CountryId",
+                                        shiny::HTML("<center><p>Select<span style='color:black'>Please select a country:</span></p></center>"),
+                                        choices = ListCountries,selected = whichspain),
+                            
+                            helpText(h5(paste0("Last data:"," ",LastUpdate)),align = "center"),
                             
                             sidebarMenu(
                               
@@ -49,12 +57,13 @@ sidebar <- dashboardSidebar(width = 200,
                               hr(),
                               
                               helpText("Developed by ", 
-                                       a("Ignasi Pascual", href = "https://github.com/ipveka"), ".",
-                                       style = "padding-left:1em; padding-right:1em;position:absolute;")
+                                       a("Ignasi Pascual", href = "https://github.com/ipveka"),
+                                       align = "center")
                             )
 )
 
-### Dashboard:
+### Dashboard: ----------------------------------------------------------------
+
 body <- dashboardBody(
   
   # CSS 
@@ -62,10 +71,12 @@ body <- dashboardBody(
     tags$link(rel = "stylesheet", type = "text/css", href = "custom.css")
   ),
   
-  # Tabintes:
+  # TabItems: ----------------------------------------------------------------
+  
   tabItems(
     
-    ### TAB 0 = Home:
+    ### TAB 0 = Home: ----------------------------------------------------------------
+    
     tabItem(tabName = "home",
             fluidPage(
               box(width = 12,
@@ -73,76 +84,74 @@ body <- dashboardBody(
             
     ),
     
-    ### TAB 1 = Data:
-    tabItem(tabName = "data",
+    ### TAB 1 = Data: ----------------------------------------------------------------
+    
+    tabItem(tabName = "data",tags$head(includeCSS(path = "www/custom.css")),
             fluidRow(
               column(width = 4,
-                     box(width = 12,
-                         helpText("Select a country to examine. Information will be collected from the ECDC."),
-                         selectInput("CountryId", label = h3("Select country"), 
-                                     choices = ListCountries,
-                                     selected = whichspain))
+                     box(title = "Numbef of confirmed cases",width = 12,collapsible = TRUE,
+                         helpText(h5(textOutput("TotalCases")))
                      ),
+                     box(title = "Number of confirmed deaths",width = 12,collapsible = TRUE,
+                         helpText(h5(textOutput("TotalDeaths")))
+                     ),
+              ),
               column(width = 8,
-                     box(width = 12,
+                     box(width = 12,collapsible = TRUE,
                          title = "Table of content",
-                         withSpinner(DT::dataTableOutput("table",width = 800)))))
+                         withSpinner(dataTableOutput('Table1')))
+                     )
+              )
     ),
-              
-    ### TAB 2 = Graphics:
+    
+    ### TAB 2 = Graphics: ----------------------------------------------------------------
+    
     tabItem(tabName = "graphics",
             fluidRow(
               column(width = 6,
                      box(width = 12,
-                         title = "Number of reported cases",
-                         withSpinner(plotOutput("plot1",height = "650px")))),
+                         title = "Cases per day ",
+                         withSpinner(plotlyOutput("plot1",height = "400px")))),
               column(width = 6,
                      box(width = 12,
-                         title = "Number of reported deaths",
-                         withSpinner(plotOutput("plot2",height = "650px"))))),
+                         title = "Deaths per day",
+                         withSpinner(plotlyOutput("plot2",height = "400px"))))),
             fluidRow(
               column(width = 6,
                      box(width = 12,
-                         title = "Graphics",
-                         withSpinner(plotOutput("plot1",height = "650px")))),
+                         title = "Cumulative cases per day",
+                         withSpinner(plotlyOutput("plot3",height = "400px")))),
               column(width = 6,
                      box(width = 12,
-                         title = "Graphics",
-                         withSpinner(plotOutput("plot2",height = "650px"))))),
-            fluidRow(
-              column(width = 6,
-                     box(width = 12,
-                         title = "Graphics",
-                         withSpinner(plotOutput("plot3",height = "650px")))),
-              column(width = 6,
-                     box(width = 12,
-                         title = "Graphics",
-                         withSpinner(plotOutput("plot4",height = "650px")))))
+                         title = "Cumulative deaths per day",
+                         withSpinner(plotlyOutput("plot4",height = "400px")))))
     ),
+
+    # ### TAB 3 = Analysis: ----------------------------------------------------------------
     
-    ### TAB 3 = Analysis:
     tabItem(tabName = "analysis",
             fluidRow(
               column(width = 6,
                      box(width = 12,
-                         title = "Graphics",
-                         withSpinner(plotOutput("plot5",height = "650px")))),
+                         title = "Log cases per day",
+                         withSpinner(plotlyOutput("plot5",height = "400px")))),
               column(width = 6,
                      box(width = 12,
-                         title = "Graphics",
-                         withSpinner(plotOutput("plot6",height = "650px"))))),
+                         title = "Log deaths per day",
+                         withSpinner(plotlyOutput("plot6",height = "400px"))))),
             fluidRow(
               column(width = 6,
                      box(width = 12,
-                         title = "Graphics",
-                         withSpinner(plotOutput("plot7",height = "650px")))),
+                         title = "Percentual change in cases per day",
+                         withSpinner(plotlyOutput("plot7",height = "400px")))),
               column(width = 6,
                      box(width = 12,
-                         title = "Graphics",
-                         withSpinner(plotOutput("plot8",height = "650px")))))
+                         title = "Percentual change in deaths per day",
+                         withSpinner(plotlyOutput("plot8",height = "400px")))))
     ),
     
-    ### TAB 4 = About
+    ### TAB 4 = About ----------------------------------------------------------------
+    
     tabItem(tabName = "about",
             fluidPage(
               box(width = 12,

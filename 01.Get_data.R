@@ -16,7 +16,13 @@ data <- read.csv(tf)
 
 #------------------ Data ------------------
 
+# Set colnames
+
 colnames(data) <- c("Date","Day","Month","Year","Cases","Deaths","Country","GeoId","TerritoryCode","PopData2018")
+
+# Select variables of interest
+
+data <- data %>% select(Date,Cases,Deaths,Country)
 
 # Only select countries with more than 100 cases
 
