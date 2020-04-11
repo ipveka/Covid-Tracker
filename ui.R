@@ -90,10 +90,10 @@ body <- dashboardBody(
             fluidRow(
               column(width = 4,
                      box(title = "Numbef of confirmed cases",width = 12,collapsible = TRUE,
-                         helpText(h5(textOutput("TotalCases")))
+                         helpText(strong(textOutput("TotalCases")))
                      ),
                      box(title = "Number of confirmed deaths",width = 12,collapsible = TRUE,
-                         helpText(h5(textOutput("TotalDeaths")))
+                         helpText(strong(textOutput("TotalDeaths")))
                      ),
               ),
               column(width = 8,
