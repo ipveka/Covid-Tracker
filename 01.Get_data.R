@@ -18,7 +18,7 @@ data <- read.csv(tf)
 
 # Set colnames
 
-colnames(data) <- c("Date","Day","Month","Year","Cases","Deaths","Country","GeoId","TerritoryCode","PopData2018")
+colnames(data) <- c("Date","Day","Month","Year","Cases","Deaths","Country","GeoId","TerritoryCode","PopData2018","Continent")
 
 # Select variables of interest
 

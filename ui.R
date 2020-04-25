@@ -66,7 +66,7 @@ sidebar <- dashboardSidebar(width = 250,
 
 body <- dashboardBody(
   
-  # CSS 
+  # CSS
   tags$head(
     tags$link(rel = "stylesheet", type = "text/css", href = "custom.css")
   ),
@@ -89,12 +89,15 @@ body <- dashboardBody(
     tabItem(tabName = "data",tags$head(includeCSS(path = "www/custom.css")),
             fluidRow(
               column(width = 4,
+                     box(title = "Last update of data",width = 12,collapsible = TRUE,
+                         helpText(strong(paste0("Last data:"," ",LastUpdate)),align = "center")
+                     ),
                      box(title = "Numbef of confirmed cases",width = 12,collapsible = TRUE,
-                         helpText(strong(textOutput("TotalCases")))
+                         helpText(strong(textOutput("TotalCases")),align = "center")
                      ),
                      box(title = "Number of confirmed deaths",width = 12,collapsible = TRUE,
-                         helpText(strong(textOutput("TotalDeaths")))
-                     ),
+                         helpText(strong(textOutput("TotalDeaths")),align = "center")
+                     )
               ),
               column(width = 8,
                      box(width = 12,collapsible = TRUE,

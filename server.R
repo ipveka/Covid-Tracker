@@ -1,8 +1,6 @@
 
 #---
 
-# Get data
-
 #------------------ Parameters ------------------
 
 confirmed_color <- "#000080"
@@ -77,7 +75,7 @@ server <- function(input, output) {
   ### Some operations: ----------------------------------------------------------------
   
   output$TotalCases <- renderText({
-    paste0("The confirmed number of cases is:"," ",max(dataInput()$CumCases))
+      paste0("The confirmed number of cases is:"," ",max(dataInput()$CumCases))
   })
   
   output$TotalDeaths <- renderText({
