@@ -1,19 +1,10 @@
 
-#---
-
-#------------------ Parameters ------------------
-
-confirmed_color <- "#000080"
-main_color <- "#000000"
-death_color <- "#000080"
-
 # Source
 
+source("Runtime.R")
 source("01.Get_data.R")
 
 ##### Server
-
-# Packages ----------------------------------------------------------------
 
 library("RSQLite") # Data importing
 library("shiny") # Shiny components
@@ -282,3 +273,5 @@ server <- function(input, output) {
   #})
   
 } 
+
+#---

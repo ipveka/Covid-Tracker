@@ -1,9 +1,10 @@
 
-#---
+# Source
+
+source("Runtime.R")
+source("01.Get_data.R")
 
 ##### User Interface
-
-# Packages ----------------------------------------------------------------
 
 library("RSQLite") # Data importing
 library("shiny") # Shiny components
@@ -29,7 +30,7 @@ library("DT") # Data tables
 
 ### Title: ----------------------------------------------------------------
 
-header <- dashboardHeader(title = "ShinyCovid")
+header <- dashboardHeader(title = "CovidTracker")
 
 ### SideBar: ----------------------------------------------------------------
 
